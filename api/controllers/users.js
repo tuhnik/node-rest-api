@@ -19,10 +19,10 @@ exports.getAll = (req, res)=>{
 
 exports.register = (req, res, next)=>{
     User.findOne({email: req.body.email}).then(user => {
-        if(user) {
-            res.status(409).json({ message: "Email already in use"})
+        if(user) { 
+            return res.status(409).json({ message: "Email already in use"})
         }
-        else {
+        else { //TODO check if activation token expired - using MongoDB TTL for now
             bcrypt.hash(req.body.password, 10, (err, hash)=>{
                 if(err) {
                     return next(err)
@@ -32,7 +32,7 @@ exports.register = (req, res, next)=>{
                         _id: new mongoose.Types.ObjectId(),
                         email: req.body.email,
                         password: hash,
-                        activationCode: jwt.sign({email: req.body.email}, process.env.JWT_KEY, {expiresIn: "1h"}),
+                        activationCode: jwt.sign({email: req.body.email}, process.env.JWT_KEY, {expiresIn: "5m"}),
                         activated: false
                     })
                     user.save().then(result => {  
@@ -61,9 +61,9 @@ exports.login = (req, res, next)=>{
         if(!user){
             return res.status(401).json({message: "Authentication failed"})
         }
-        // if(!user.activated){
-        //     return res.status(401).json({message: "User is not activated"})
-        // }
+        if(!user.activated){
+            return res.status(401).json({message: "User is not activated"})
+        }
         bcrypt.compare(req.body.password, user.password, (err, result)=>{
             if(err) {
                 return res.status(401).json({message: "Authentication failed"})
@@ -117,14 +117,18 @@ exports.delete = (req, res)=>{
 
 exports.activate = (req, res)=>{
     const token = req.params.token
-
     jwt.verify(token, process.env.JWT_KEY, (err, result)=>{
         if(!result) {
             res.status(401).json({error: "Invalid token"})
         }
         else {       
-            User.updateOne({email: result.email}, {$set: {activated: true}}).exec().then(result=>{
-                res.status(200).json({message: "Email verified"})
+            User.updateOne({email: result.email}, {$set: {activated: true}, $unset: { activationCode : 1}}).exec().then(result=>{
+                if(result.n) {
+                    res.status(200).json({message: "Email verified"})
+                }
+                else {
+                    res.status(500).json({message: "Invalid token"})
+                }
             }).catch(err => {
                 res.status(500).json({error: err.message})
             })          

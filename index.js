@@ -5,6 +5,7 @@ const app = express()
 const morgan = require('morgan')
 const userRoutes = require('./api/routes/users')
 const mongoose = require('mongoose')
+mongoose.set('useCreateIndex', true) //fixing deprecation warning
 const cors = require('cors')
 
 mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true })
