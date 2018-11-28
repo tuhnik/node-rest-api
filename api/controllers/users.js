@@ -32,6 +32,7 @@ exports.register = (req, res, next)=>{
                         _id: new mongoose.Types.ObjectId(),
                         email: req.body.email,
                         password: hash,
+                        activationCode: jwt.sign({email: req.body.email}, process.env.JWT_KEY, {expiresIn: "1h"}),
                         activated: false
                     })
                     user.save().then(result => {  
@@ -42,6 +43,7 @@ exports.register = (req, res, next)=>{
                                 activated: result.activated
                             }
                         }
+                        //TODO email sending logic
                         res.status(201).json(response)
                     })
                     .catch(err => {
@@ -113,6 +115,19 @@ exports.delete = (req, res)=>{
     })
 }
 
-exports.verify = (req, res)=>{
+exports.activate = (req, res)=>{
+    const token = req.params.token
 
+    jwt.verify(token, process.env.JWT_KEY, (err, result)=>{
+        if(!result) {
+            res.status(401).json({error: "Invalid token"})
+        }
+        else {       
+            User.updateOne({email: result.email}, {$set: {activated: true}}).exec().then(result=>{
+                res.status(200).json({message: "Email verified"})
+            }).catch(err => {
+                res.status(500).json({error: err.message})
+            })          
+        }
+    })
 }

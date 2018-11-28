@@ -7,7 +7,7 @@ router.get("/", tokenCheck, usersController.getAll)
 
 router.post("/register", usersController.register)
 
-router.get("/activate/:id", usersController.verify)
+router.get("/activate/:token", usersController.activate)
 
 router.post("/login", usersController.login)
 
