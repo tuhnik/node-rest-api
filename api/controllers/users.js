@@ -13,7 +13,7 @@ exports.getAll = (req, res)=>{
         res.status(200).json(response)
     })
     .catch(err => {
-        res.status(500).json({error: err})
+        res.status(500).json({error: err}) 
     })  
 }
 
@@ -134,4 +134,23 @@ exports.activate = (req, res)=>{
             })          
         }
     })
+}
+
+//todo password reset
+
+exports.forgotPassword = (req, res) =>{
+    const email = req.body.email
+    // check if email/user in db
+    // create expiring jwt with password hash as secret
+    // email link to user   
+}
+
+exports.resetPassword = (req, res) =>{
+    const token = req.params.token
+    const email = req.body.email
+    const new_password = req.body.new_password
+    //check if email/user in db
+    //try to decode token with password hash
+    //if successful, replace old password with new one (hashed)
+    //email to user   
 }
