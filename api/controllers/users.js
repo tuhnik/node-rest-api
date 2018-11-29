@@ -2,6 +2,7 @@ const User = require('../models/user')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const transporter = require('../utils/mailsender')
 
 exports.getAll = (req, res)=>{
     User.find({}).select('email activated').exec()
@@ -44,7 +45,19 @@ exports.register = (req, res, next)=>{
                             }
                         }
                         //TODO email sending logic
-                        res.status(201).json(response)
+                        const opts = {
+                            from: 'astusinlegopeale@gmail.com',
+                            to: result.email,
+                            subject: 'Welcome!',
+                            html: '<p>Your activate your account by clicking: http://localhost:5000/users/activate/' + result.activationCode + '</p>'
+                          };
+                        transporter.sendMail(opts, function (err, info) {
+                            if(err)
+                            res.status(500).json({error: err.message})
+                            else
+                            res.status(201).json(response)
+                         });
+
                     })
                     .catch(err => {
                         res.status(500).json({error: err})

@@ -1,4 +1,8 @@
-require('./CONFIG.js')
+require('./CONFIG.js')  // used for creating env variables
+                        // process.env.JWT_KEY
+                        // process.env.MONGODB_URL
+                        // process.env.GMAIL_PASSWORD
+                        // process.env.GMAIL_USER
 
 const express = require('express')
 const app = express()
