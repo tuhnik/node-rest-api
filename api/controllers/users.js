@@ -19,21 +19,36 @@ exports.getAll = (req, res)=>{
 }
 
 exports.register = (req, res, next)=>{
-    User.findOne({email: req.body.email}).then(user => {
+
+    const email = req.body.email
+    const password = req.body.password
+
+    if(!email.match(/[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/)) {
+        return res.status(500).json({error: "Invalid e-mail"})
+    }
+
+    if(email.length < 1) {
+        return res.status(500).json({error: "Invalid e-mail"})
+    }
+    if(password.length < 6) {
+        return res.status(500).json({error: "Password must be at least 6 characters!"})
+    }
+
+    User.findOne({email}).then(user => {
         if(user) { 
-            return res.status(409).json({ message: "Email already in use"})
+            return res.status(500).json({ error: "Email already in use"})
         }
         else { //TODO check if activation token expired - using MongoDB TTL for now
-            bcrypt.hash(req.body.password, 10, (err, hash)=>{
+            bcrypt.hash(password, 10, (err, hash)=>{
                 if(err) {
                     return next(err)
                 }
                 else {
                     const user = new User({
                         _id: new mongoose.Types.ObjectId(),
-                        email: req.body.email,
+                        email,
                         password: hash,
-                        activationCode: jwt.sign({email: req.body.email}, process.env.JWT_KEY, {expiresIn: "5m"}),
+                        activationCode: jwt.sign({email}, process.env.JWT_KEY, {expiresIn: "5m"}),
                         activated: false
                     })
                     user.save().then(result => {  
@@ -46,21 +61,21 @@ exports.register = (req, res, next)=>{
                         }
                         //TODO email sending logic
                         const opts = {
-                            from: 'astusinlegopeale@gmail.com',
+                            from: process.env.GMAIL_USER,
                             to: result.email,
                             subject: 'Welcome!',
-                            html: '<p>Your activate your account by clicking: http://localhost:5000/users/activate/' + result.activationCode + '</p>'
+                            html: '<p>Activate your account by clicking: http://localhost:3000/activate/' + result.activationCode + '</p>'
                           };
                         transporter.sendMail(opts, function (err, info) {
                             if(err)
-                            res.status(500).json({error: err.message})
+                            res.status(500).json({error: "Couldn't send verification e-mail"})
                             else
                             res.status(201).json(response)
                          });
 
                     })
                     .catch(err => {
-                        res.status(500).json({error: err})
+                        res.status(500).json({error: "Couldn't register user (invalid email)"})
                     })
                 }
             })
@@ -72,20 +87,20 @@ exports.register = (req, res, next)=>{
 exports.login = (req, res, next)=>{
     User.findOne({email: req.body.email}).exec().then(user=>{
         if(!user){
-            return res.status(401).json({message: "Authentication failed"})
+            return res.status(401).json({error: "Authentication failed"})
         }
         if(!user.activated){
-            return res.status(401).json({message: "User is not activated"})
+            return res.status(401).json({error: "User is not activated"})
         }
         bcrypt.compare(req.body.password, user.password, (err, result)=>{
             if(err) {
-                return res.status(401).json({message: "Authentication failed"})
+                return res.status(401).json({error: "Authentication failed"})
             }
             if(result) {
                 const token = jwt.sign({email: user.email, id: user._id}, process.env.JWT_KEY, {expiresIn: "24h"})
-                return res.status(200).json({message: "Authenticated", token})
+                return res.status(200).json({message: "Authenticated", token, email:user.email})
             }
-            return res.status(401).json({message: "Authentication failed"})
+            return res.status(401).json({error: "Authentication failed"})
         })
         
     }).catch()
@@ -153,6 +168,16 @@ exports.activate = (req, res)=>{
 
 exports.forgotPassword = (req, res) =>{
     const email = req.body.email
+
+    User.findOne({email}).then(user=>{
+        if(!user) {
+            res.status(500).json({error: "User not found"})
+        }
+        else {
+            res.status(200).json({message: "User found"})
+            let resetCode = jwt.sign({email: user.email}, user.password, {expiresIn: "5m"})
+        }
+    })
     // check if email/user in db
     // create expiring jwt with password hash as secret
     // email link to user   
