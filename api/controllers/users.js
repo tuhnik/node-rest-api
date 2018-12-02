@@ -26,10 +26,6 @@ exports.register = (req, res, next)=>{
     if(!email.match(/[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/)) {
         return res.status(500).json({error: "Invalid e-mail"})
     }
-
-    if(email.length < 1) {
-        return res.status(500).json({error: "Invalid e-mail"})
-    }
     if(password.length < 6) {
         return res.status(500).json({error: "Password must be at least 6 characters!"})
     }
@@ -59,7 +55,7 @@ exports.register = (req, res, next)=>{
                                 activated: result.activated
                             }
                         }
-                        //TODO email sending logic
+                        
                         const opts = {
                             from: process.env.GMAIL_USER,
                             to: result.email,
@@ -75,7 +71,7 @@ exports.register = (req, res, next)=>{
 
                     })
                     .catch(err => {
-                        res.status(500).json({error: "Couldn't register user (invalid email)"})
+                        res.status(500).json({error: err.message})
                     })
                 }
             })
@@ -175,7 +171,19 @@ exports.forgotPassword = (req, res) =>{
         }
         else {
             res.status(200).json({message: "User found"})
-            let resetCode = jwt.sign({email: user.email}, user.password, {expiresIn: "5m"})
+            let resetCode = jwt.sign({email: user.email}, user.password, {expiresIn: "30m"})
+            const opts = {
+                from: process.env.GMAIL_USER,
+                to: user.email,
+                subject: 'Hello!',
+                html: '<p>Reset your account password: http://localhost:3000/reset/' + user.email + '/'+ resetCode + '</p>'
+              };
+            transporter.sendMail(opts, function (err, info) {
+                if(err)
+                res.status(500).json({error: "Couldn't send verification e-mail"})
+                else
+                res.status(200).json({message: "E-mail sent"})
+             });
         }
     })
     // check if email/user in db
@@ -183,12 +191,34 @@ exports.forgotPassword = (req, res) =>{
     // email link to user   
 }
 
-exports.resetPassword = (req, res) =>{
+exports.resetPassword = (req, res) => {
     const token = req.params.token
     const email = req.body.email
     const new_password = req.body.new_password
+    console.log(token)
+
     //check if email/user in db
     //try to decode token with password hash
     //if successful, replace old password with new one (hashed)
     //email to user   
+}
+
+exports.checkResetToken = (req, res) => {
+    const email = req.params.email
+    const token = req.params.token
+    User.findOne({email}).then(user=>{
+        if(!user){
+            return res.status(500).json({error: "Invalid token"})
+        }
+        else {
+            jwt.verify(token, user.password, (err, result)=>{
+                if(!result) {
+                    res.status(401).json({error: "Invalid token"})
+                }
+                else {
+                    res.status(200).json({message: "Token verified!"})
+                }
+            })
+        }
+    })
 }

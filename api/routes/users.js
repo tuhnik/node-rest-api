@@ -19,6 +19,8 @@ router.delete("/:id", tokenCheck, usersController.delete)
 
 router.post("/forgotpassword", usersController.forgotPassword)
 
+router.post("/checkresettoken/:email/:token", usersController.checkResetToken)
+
 router.post("/resetpassword/:token", usersController.resetPassword)
 
 module.exports = router
