@@ -192,15 +192,37 @@ exports.forgotPassword = (req, res) =>{
 }
 
 exports.resetPassword = (req, res) => {
-    const token = req.params.token
+    const token = req.body.token
     const email = req.body.email
-    const new_password = req.body.new_password
-    console.log(token)
+    let new_password = ""
+    try {
+        new_password =  bcrypt.hashSync(req.body.password, 10)
+    }
+    catch(err) {
+        return res.status(500).json({error: "Password hashing failed!"})
+    }
+    //todo learn async waterfall or something
+    User.findOne({email}).then(user=>{
+        if(!user){
+            return res.status(500).json({error: "Invalid token"})
+        }
+        else {
+            jwt.verify(token, user.password, (err, result)=>{
+                if(!result) {
+                    res.status(401).json({error: "Invalid token"})
+                }
+                else {
+                    user.updateOne({ $set: {"password": new_password}}).exec().then(result=>{               
+                        res.status(200).json({message: "Password successfully changed!"})
+                    }).catch(err=>{                  
+                        res.status(500).json({error: "Failed to change password"})
+                    })
 
-    //check if email/user in db
-    //try to decode token with password hash
-    //if successful, replace old password with new one (hashed)
-    //email to user   
+                }
+            })
+        }
+    })
+ 
 }
 
 exports.checkResetToken = (req, res) => {
