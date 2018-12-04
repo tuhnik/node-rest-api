@@ -20,7 +20,7 @@ exports.getAll = (req, res)=>{
 
 exports.register = (req, res, next)=>{
 
-    const email = req.body.email
+    const email = req.body.email && req.body.email.toLowerCase()
     const password = req.body.password
 
     if(!email.match(/[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/)) {
@@ -81,7 +81,9 @@ exports.register = (req, res, next)=>{
 }
 
 exports.login = (req, res, next)=>{
-    User.findOne({email: req.body.email}).exec().then(user=>{
+    const email = req.body.email && req.body.email.toLowerCase()
+
+    User.findOne({email}).exec().then(user=>{
         if(!user){
             return res.status(401).json({error: "Authentication failed"})
         }
