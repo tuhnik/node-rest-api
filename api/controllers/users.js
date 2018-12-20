@@ -248,6 +248,6 @@ exports.checkResetToken = (req, res) => {
     })
 }
 
-exports.checkToken = (req, res) => {
+exports.tokenCheckSuccess = (req, res) => {
    res.status(200).json({message: "Token valid!"})
 }

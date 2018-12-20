@@ -11,7 +11,7 @@ router.get("/activate/:token", usersController.activate)
 
 router.post("/login", usersController.login)
 
-router.get("/checktoken", tokenCheck, usersController.checkToken)
+router.get("/checktoken", tokenCheck, usersController.tokenCheckSuccess)
 
 router.get("/:id", tokenCheck, usersController.getOne)
 
