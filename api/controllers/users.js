@@ -107,6 +107,7 @@ exports.login = (req, res, next)=>{
 exports.getOne = (req, res)=>{
     let id = req.params.id
     User.findById(id).select('email activated').then(doc => {
+        
         if (doc) {
             res.status(200).json(doc)
         } else {
@@ -114,7 +115,7 @@ exports.getOne = (req, res)=>{
         }     
     })
     .catch(err => {
-        res.status(500).json({error: err})
+        res.status(500).json({error: err.message})
     })
 }
 
@@ -245,4 +246,8 @@ exports.checkResetToken = (req, res) => {
             })
         }
     })
+}
+
+exports.checkToken = (req, res) => {
+   res.status(200).json({message: "Token valid!"})
 }
