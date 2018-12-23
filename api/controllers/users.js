@@ -163,8 +163,6 @@ exports.activate = (req, res)=>{
     })
 }
 
-//todo password reset
-
 exports.forgotPassword = (req, res) =>{
     const email = req.body.email
 
@@ -189,9 +187,7 @@ exports.forgotPassword = (req, res) =>{
              });
         }
     })
-    // check if email/user in db
-    // create expiring jwt with password hash as secret
-    // email link to user   
+
 }
 
 exports.resetPassword = (req, res) => {
@@ -204,7 +200,7 @@ exports.resetPassword = (req, res) => {
     catch(err) {
         return res.status(500).json({error: "Password hashing failed!"})
     }
-    //todo learn async waterfall or something
+    //todo async waterfall or something
     User.findOne({email}).then(user=>{
         if(!user){
             return res.status(500).json({error: "Invalid token"})
